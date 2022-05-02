@@ -29,6 +29,7 @@ public class WinCalendar extends JFrame {
 	private final JTextField txtMonth = new JTextField();
 	private final JButton btnCreate = new JButton("생성");
 	private final JPanel panelCal = new JPanel();
+	private boolean[] bSchedule = new boolean[31];
 	/**
 	 * Launch the application.
 	 */
@@ -66,7 +67,7 @@ public class WinCalendar extends JFrame {
 		
 		panel.add(lblYear);
 		txtMonth.setHorizontalAlignment(SwingConstants.RIGHT);
-		txtMonth.setText("1");
+		txtMonth.setText("5");
 		
 		panel.add(txtMonth);
 		txtMonth.setColumns(10);
@@ -74,6 +75,14 @@ public class WinCalendar extends JFrame {
 		panel.add(lblMonth);
 		btnCreate.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
+				//해당 년월을 입력한 후, 버튼 클릭
+				try {
+					LoadSchedule();
+				} catch (Exception e2) {
+					// TODO Auto-generated catch block
+					e2.printStackTrace();
+				}
+				
 				//원래의 버튼들을 삭제한다
 				Component[] componentList = panelCal.getComponents();
 				for(Component c: componentList) {
@@ -109,7 +118,11 @@ public class WinCalendar extends JFrame {
 				}
 					//월의 마지막 날짜에 맞춰 버튼을 생성
 					for(int i=1; i<=Months[curMonth-1]; i++) {
-						JButton btn = new JButton(Integer.toString(i));
+						JButton btn = null;
+						if(bSchedule[i-1])
+							btn = new JButton(Integer.toString(i) + "*");
+						else
+							btn = new JButton(Integer.toString(i));
 						panelCal.add(btn);
 						panelCal.revalidate();
 						
@@ -150,8 +163,28 @@ public class WinCalendar extends JFrame {
 							}
 						});
 					}
-					
-			}
+					}
+					private void LoadSchedule() throws Exception{
+						Class.forName("com.mysql.cj.jdbc.Driver");
+						String temp = "jdbc:mysql://localhost/sampledb?user=root&password=1234";
+						Connection con = DriverManager.getConnection(temp);
+						Statement stmt = con.createStatement();
+						String sql = "SELECT * FROM scheduletbl";
+						ResultSet rs = stmt.executeQuery(sql);
+						
+						String year = txtYear.getText(); //2022
+						String month = null;
+						if(txtMonth.getText().length()<2) // 01, 02, ... ~12
+							month = "0" + txtMonth.getText();
+						//System.out.println(year + "," + month);
+						while(rs.next()) {					//2022-05-05					
+							if(year.equals(rs.getString("mDate").substring(0,4)) && 
+									month.equals(rs.getString("mDate").substring(5,7))){
+								int idx = Integer.parseInt(rs.getString("mDate").substring(8));
+								bSchedule[idx-1]=true;
+							}
+						}						
+					}
 		});
 		panel.add(btnCreate);
 		
